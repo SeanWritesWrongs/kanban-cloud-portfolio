@@ -1,0 +1,35 @@
+services:
+
+    planka:
+      image: ghcr.io/plankanban/planka:2.2.1
+      restart: unless-stopped
+      ports:
+        - "3000:1337"
+      environment:
+        BASE_URL: ${PLANKA_BASE_URL}
+        DATABASE_URL: postgresql://${PLANKA_DB_USER}:${PLANKA_DB_PASSWORD}@postgres/${PLANKA_DB_NAME}
+        SECRET_KEY: ${PLANKA_SECRET_KEY}
+      volumes:
+        - planka-data:/app/data
+      depends_on:
+        postgres:
+          condition: service_healthy
+
+    postgres:
+      image: postgres:16-alpine
+      restart: unless-stopped
+      environment:
+        POSTGRES_DB: ${PLANKA_DB_NAME}
+        POSTGRES_USER: ${PLANKA_DB_USER}
+        POSTGRES_PASSWORD: ${PLANKA_DB_PASSWORD}
+      volumes:
+        - postgres-data:/var/lib/postgresql/data
+      healthcheck:
+        test: ["CMD-SHELL", "pg_isready -U ${PLANKA_DB_USER} -d ${PLANKA_DB_NAME}"]
+        interval: 10s
+        timeout: 5s
+        retries: 5
+
+volumes:
+  planka-data:
+  postgres-data:
